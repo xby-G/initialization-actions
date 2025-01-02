@@ -44,20 +44,9 @@ class KafkaTestCase(DataprocTestCase):
                                          python_version))
 
     @parameterized.parameters(
-        ("HA", ["m-0", "m-1", "m-2"]), )
-    def test_kafka(self, configuration, machine_suffixes):
-        if self.getImageOs() == 'rocky':
-            self.skipTest("Not supported in Rocky Linux-based images")
-
-        metadata = 'run-on-master=true'
-        self.createCluster(configuration, self.INIT_ACTIONS, metadata=metadata)
-        for machine_suffix in machine_suffixes:
-            self.verify_instance("{}-{}".format(self.getClusterName(),
-                                                machine_suffix))
-
-    @parameterized.parameters(
         'STANDARD',
         'HA',
+        'KERBEROS',
     )
     def test_kafka_job(self, configuration):
         if self.getImageOs() == 'rocky':
@@ -70,20 +59,9 @@ class KafkaTestCase(DataprocTestCase):
         self.__submit_pyspark_job(self.getClusterName())
 
     @parameterized.parameters(
-        ("HA", ["m-0", "m-1", "m-2"]), )
-    def test_kafka_cruise_control(self, configuration, machine_suffixes):
-        if self.getImageOs() == 'rocky':
-            self.skipTest("Not supported in Rocky Linux-based images")
-
-        metadata = 'run-on-master=true'
-        self.createCluster(configuration, self.KAFKA_CRUISE_CONTROL_INIT_ACTION, metadata=metadata)
-        for machine_suffix in machine_suffixes:
-            self.verify_instance("{}-{}".format(self.getClusterName(),
-                                                machine_suffix))
-
-    @parameterized.parameters(
         'STANDARD',
         'HA',
+        'KERBEROS',
     )
     def test_kafka_cruise_control_job(self, configuration):
         if self.getImageOs() == 'rocky':
@@ -96,23 +74,9 @@ class KafkaTestCase(DataprocTestCase):
         self.__submit_pyspark_job(self.getClusterName())
 
     @parameterized.parameters(
-        ("HA", ["m-0", "m-1", "m-2"]), )
-    def test_kafka_manager(self, configuration, machine_suffixes):
-        if self.getImageOs() == 'rocky':
-            self.skipTest("Not supported in Rocky Linux-based images")
-
-        if self.getImageVersion() <= pkg_resources.parse_version("2.0"):
-            self.skipTest("Java 11 or higher is required for CMAK")
-
-        metadata = 'run-on-master=true,kafka-enable-jmx=true'
-        self.createCluster(configuration, self.KAFKA_MANAGER_INIT_ACTION, metadata=metadata)
-        for machine_suffix in machine_suffixes:
-            self.verify_instance("{}-{}".format(self.getClusterName(),
-                                                machine_suffix))
-
-    @parameterized.parameters(
         'STANDARD',
         'HA',
+        'KERBEROS',
     )
     def test_kafka_manager_job(self, configuration):
         if self.getImageOs() == 'rocky':

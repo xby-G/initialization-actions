@@ -17,7 +17,7 @@ logging.basicConfig(level=os.getenv("LOG_LEVEL", logging.INFO))
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('image', None, 'Dataproc image URL')
-flags.DEFINE_string('image_version', None, 'Dataproc image version, e.g. 1.4')
+flags.DEFINE_string('image_version', None, 'Dataproc image version, e.g. 2.2')
 flags.DEFINE_boolean('skip_cleanup', False, 'Skip cleanup of test resources')
 FLAGS(sys.argv)
 
@@ -38,6 +38,9 @@ class DataprocTestCase(parameterized.TestCase):
         "HA": [
             "--num-masters=3",
             "--num-workers=2",
+        ],
+        "KERBEROS": [
+            "--enable-kerberos"
         ]
     }
 
@@ -47,6 +50,7 @@ class DataprocTestCase(parameterized.TestCase):
     COMPONENT = None
     INIT_ACTIONS = None
     INIT_ACTIONS_REPO = None
+    IMAGE_VERSION_2_2 = ['2.2-debian12', '2.2-ubuntu22', '2.2-rocky9']
 
     @classmethod
     def setUpClass(cls):
@@ -114,6 +118,14 @@ class DataprocTestCase(parameterized.TestCase):
             args.append("--image={}".format(FLAGS.image))
         elif FLAGS.image_version:
             args.append("--image-version={}".format(FLAGS.image_version))
+            if FLAGS.image_version in self.IMAGE_VERSION_2_2:
+                args.append("--public-ip-address")
+
+        for i in init_actions:
+            if "install_gpu_driver.sh" in i or "horovod.sh" in i or \
+                     "dask-rapids.sh"  in i or "mlvm.sh"    in i or \
+                     "spark-rapids.sh" in i:
+                args.append("--no-shielded-secure-boot")
 
         if optional_components:
             args.append("--optional-components={}".format(
@@ -142,19 +154,22 @@ class DataprocTestCase(parameterized.TestCase):
             args.append("--master-accelerator={}".format(master_accelerator))
         if worker_accelerator:
             args.append("--worker-accelerator={}".format(worker_accelerator))
-        
+
         if master_machine_type:
             args.append("--master-machine-type={}".format(master_machine_type))
         else:
             args.append("--master-machine-type={}".format(machine_type))
-        
+
         if worker_machine_type:
-            args.append("--worker-machine-type={}".format(worker_machine_type))   
+            args.append("--worker-machine-type={}".format(worker_machine_type))
         else:
             args.append("--worker-machine-type={}".format(machine_type))
 
         args.append("--master-boot-disk-size={}".format(boot_disk_size))
         args.append("--worker-boot-disk-size={}".format(boot_disk_size))
+
+        args.append("--master-boot-disk-type=pd-ssd")
+        args.append("--worker-boot-disk-type=pd-ssd")
 
         args.append("--format=json")
 
@@ -163,10 +178,14 @@ class DataprocTestCase(parameterized.TestCase):
           args.append("--zone={}".format(self.cluster_zone))
 
         if not FLAGS.skip_cleanup:
-            args.append("--max-age=2h")
+          args.append("--max-age=60m")
+
+        args.append("--max-idle=25m")
 
         cmd = "{} dataproc clusters create {} {}".format(
             "gcloud beta" if beta else "gcloud", self.name, " ".join(args))
+
+        print("Running command: [{}]".format(cmd))
 
         _, stdout, _ = self.assert_command(
             cmd, timeout_in_minutes=timeout_in_minutes or DEFAULT_TIMEOUT)
@@ -224,7 +243,7 @@ class DataprocTestCase(parameterized.TestCase):
 
     @staticmethod
     def getImageVersion():
-        # Get a numeric version from the version flag: '1.5-debian10' -> '1.5'.
+        # Get a numeric version from the version flag: '2.2-debian10' -> '2.2'.
         # Special case a 'preview' image versions and return a large number
         # instead to make it a higher image version in comparisons
         version = FLAGS.image_version
@@ -233,7 +252,7 @@ class DataprocTestCase(parameterized.TestCase):
 
     @staticmethod
     def getImageOs():
-        # Get OS string from the version flag: '1.5-debian10' -> 'debian'.
+        # Get OS string from the version flag: '2.2-debian10' -> 'debian'.
         # If image version specified without OS suffix ('2.0')
         # then return 'debian' by default
         version = FLAGS.image_version
