@@ -78,9 +78,9 @@ function remove_old_backports {
   oldstable=$(curl -s https://deb.debian.org/debian/dists/oldstable/Release | awk '/^Codename/ {print $2}');
   stable=$(curl -s https://deb.debian.org/debian/dists/stable/Release | awk '/^Codename/ {print $2}');
 
-  matched_files="$(grep -rsil '\-backports' /etc/apt/sources.list*)"
+  matched_files=( $(grep -rsil '\-backports' /etc/apt/sources.list*||:) )
   if [[ -n "$matched_files" ]]; then
-    for filename in "$matched_files"; do
+    for filename in "${matched_files[@]}"; do
       grep -e "$oldstable-backports" -e "$stable-backports" "$filename" || \
         sed -i -e 's/^.*-backports.*$//' "$filename"
     done
@@ -480,7 +480,7 @@ function install_mysql_cli() {
 
   log "Installing MySQL CLI ..."
   if command -v apt >/dev/null; then
-    apt update && apt install default-mysql-client -y
+    apt update && apt install mysql-client -y
   elif command -v yum >/dev/null; then
     yum -y update && yum -y install mysql
   fi

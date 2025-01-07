@@ -7,22 +7,28 @@ worker nodes in a Dataproc cluster.
 
 ## Default versions
 
-A reasonable default version will be selected for CUDA, the nvidia kernel
-driver, cuDNN, and NCCL.  When using dataproc images 2.0 or later with the
-default rapids-runtime, CUDA will default to `11.5`, and will otherwise default
-to `11.2`.
+A default version will be selected from the nvidia [support
+matrix](https://docs.nvidia.com/deeplearning/frameworks/support-matrix/index.html)
+for CUDA, the nvidia kernel driver, cuDNN, and NCCL.
 
-CUDA | Full Version | Driver    | CuDNN     | NCCL    | Supported OSs
+Specifying a supported value for the `cuda-version` metadata variable
+will select the following values for Driver, CuDNN and NCCL.  At the
+time of writing, the default value for cuda-version, if unspecified is
+12.4.  In addition to 12.4, we have also tested with 11.8, 12.0 and 12.6.
+
+CUDA | Full Version | Driver    | CuDNN     | NCCL    | Tested Dataproc Image Versions
 -----| ------------ | --------- | --------- | ------- | -------------------
-10.1 | 10.1.243     | 418.88    | 7.6.4.38  | 2.4.8   | Ubuntu
-10.2 | 10.2.89      | 440.64.00 | 7.6.5.32  | 2.5.6   | Ubuntu
-11.0 | 11.0.3       | 450.51.06 | 8.0.4.30  | 2.7.8   | Ubuntu,Rocky
-11.1 | 11.1.0       | 455.45.01 | 8.0.5.39  | 2.8.3   | Ubuntu,Debian
-11.2 | 11.2.2       | 460.73.01 | 8.1.1.33  | 2.8.3   | Ubuntu,Debian,Rocky
-11.5 | 11.5.2       | 495.29.05 | 8.3.0.98  | 2.11.4  | Ubuntu,Debian,Rocky
-11.6 | 11.6.2       | 510.47.03 | 8.4.1.50  | 2.11.4  | Ubuntu,Debian,Rocky
-11.7 | 11.7.1       | 515.65.01 | 8.5.0.96  | 2.12.12 | Ubuntu,Debian,Rocky
-11.8 | 11.8.0       | 520.56.06 | 8.6.0.163 | 2.15.5  | Ubuntu,Debian,Rocky
+11.8 | 11.8.0       | 560.35.03 | 8.6.0.163 | 2.15.5  | 2.0, 2.1, 2.2-ubuntu22
+12.0 | 12.0.0       | 550.90.07 | 8.8.1.3,  | 2.16.5  | 2.0, 2.1, 2.2-rocky9, 2.2-ubuntu22
+12.4 | 12.4.1       | 550.90.07 | 9.1.0.70  | 2.23.4  | 2.1-ubuntu20, 2.1-rocky8, 2.2
+12.6 | 12.6.2       | 560.35.03 | 9.5.1.17  | 2.23.4  | 2.1-ubuntu20, 2.1-rocky8, 2.2
+
+All variants in the preceeding table have been manually tested to work
+with the installer.  Supported OSs at the time of writing are:
+
+* Debian 10, 11 and 12
+* Ubuntu 18.04, 20.04, and 22.04 LTS
+* Rocky 8 and 9
 
 ## Using this initialization action
 
@@ -42,16 +48,15 @@ attached GPU adapters.
     CLUSTER_NAME=<cluster_name>
     gcloud dataproc clusters create ${CLUSTER_NAME} \
         --region ${REGION} \
-        --master-accelerator type=nvidia-tesla-v100 \
-        --worker-accelerator type=nvidia-tesla-v100,count=4 \
+        --master-accelerator type=nvidia-tesla-t4 \
+        --worker-accelerator type=nvidia-tesla-t4,count=4 \
         --initialization-actions gs://goog-dataproc-initialization-actions-${REGION}/gpu/install_gpu_driver.sh
     ```
 
 1.  Use the `gcloud` command to create a new cluster with NVIDIA GPU drivers
     and CUDA installed by initialization action as well as the GPU
     monitoring service. The monitoring service is supported on Dataproc 2.0+ Debian
-    and Ubuntu images. Please create a Github issue if support is needed for other
-    Dataproc images.
+    and Ubuntu images.
 
     *Prerequisite:* Create GPU metrics in
     [Cloud Monitoring](https://cloud.google.com/monitoring/docs/) using Google
@@ -85,8 +90,8 @@ attached GPU adapters.
     CLUSTER_NAME=<cluster_name>
     gcloud dataproc clusters create ${CLUSTER_NAME} \
         --region ${REGION} \
-        --master-accelerator type=nvidia-tesla-v100 \
-        --worker-accelerator type=nvidia-tesla-v100,count=4 \
+        --master-accelerator type=nvidia-tesla-t4 \
+        --worker-accelerator type=nvidia-tesla-t4,count=4 \
         --initialization-actions gs://goog-dataproc-initialization-actions-${REGION}/gpu/install_gpu_driver.sh \
         --metadata install-gpu-agent=true \
         --scopes https://www.googleapis.com/auth/monitoring.write
@@ -131,12 +136,12 @@ attached GPU adapters.
 #### GPU Scheduling in YARN:
 
 YARN is the default Resource Manager for Dataproc. To use GPU scheduling feature
-in Spark, it requires YARN version >= 2.10 or >=3.1.1. If intended to use Spark
+in Spark, it requires YARN version >= 2.10 or >= 3.1.1. If intended to use Spark
 with Deep Learning use case, it recommended to use YARN >= 3.1.3 to get support
-for [nvidia-docker version 2](https://github.com/NVIDIA/nvidia-docker).
+for [nvidia-container-toolkit](https://github.com/NVIDIA/nvidia-container-toolkit).
 
 In current Dataproc set up, we enable GPU resource isolation by initialization
-script without NVIDIA Docker, you can find more information at
+script with NVIDIA container toolkit.  You can find more information at
 [NVIDIA Spark RAPIDS getting started guide](https://nvidia.github.io/spark-rapids/).
 
 #### cuDNN
@@ -207,13 +212,45 @@ sometimes found in the "building from source" sections.
     [NVIDIA cuDNN](https://developer.nvidia.com/CUDNN) version `x.x.x.x`.
     Default is `8.3.3.40`.
 
+-   `private_secret_name: <STRING>` -
+-   `public_secret_name: <STRING>` -
+-   `secret_version: <INTEGER>` -
+-   `secret_project: <STRING>` -
+-   `cert_modulus_md5sum: <STRING>` -These arguments can be used to
+    specify the driver signing parameters.  The certificate named by
+    `public_secret_name` must be included in the boot sector of the
+    disk from which the cluster is booted.  The key named by
+    `private_secret_name` must correspond to the certificate named by
+    `public_secret_name`, and the `cert_modulus_md5sum` must match the
+    modulus md5sum of the files referenced by both the private and
+    public secret names.
+
 #### Loading built kernel module
 
-For platforms which do not have pre-built binary kernel drivers, the script will
-execute the .run file, building the kernel driver module from source.  In order
-to load a kernel module built from source, the `--no-shielded-secure-boot`
-argument must be passed to `gcloud dataproc clusters create`.  When you are
-experiencing this problem, you will see an error similar to the following:
+For platforms which do not have pre-built binary kernel drivers, the
+script will execute the .run file, installing the kernel driver
+support libraries.
+
+In addition to installing the support libraries, the open kernel
+module is fetched from github and built locally.  There are metadata
+attributes which can be used to specify the MOK key used to sign
+kernel modules for use with secure boot.
+
+-   `private_secret_name: <STRING>` -
+-   `public_secret_name: <STRING>` -
+-   `secret_version: <INTEGER>` -
+-   `secret_project: <STRING>` -
+
+Please see custom-images/examples/secure-boot/create-key-pair.sh for
+details on what these attributes are and how they are used.
+
+In order to load a kernel module built from source, either the
+`--no-shielded-secure-boot` argument must be passed to `gcloud
+dataproc clusters create`, or a trusted certificate must be included
+in the cluster's base image using the custom-image script, and secret
+names storing signing material must be supplied using metadata
+arguments.  Attempts to build from source with misconfigured or
+missing certificates will result in an error similar to the following:
 
 ```
 ERROR: The kernel module failed to load. Secure boot is enabled on this system, so this is likely because it was not signed by a key that is trusted by the kernel. Please try installing the driver again, and sign the kernel module when prompted to do so.
@@ -222,10 +259,31 @@ Please see the log entries 'Kernel module load error' and 'Kernel messages' at t
 ERROR: Installation has failed.  Please see the file '/var/log/nvidia-installer.log' for details.  You may find suggestions on fixing installation problems in the README available on the Linux driver download page at www.nvidia.com.
 ```
 
-Again, the resolution to this problem for the time being is to pass the
-`--no-shielded-secure-boot` argument to `gcloud dataproc clusters create` so
-that the kernel module built from source and unsigned can be loaded into the
-running kernel.
+The simple but unsecured resolution to this problem is to pass the
+`--no-shielded-secure-boot` argument to `gcloud dataproc clusters
+create` so that the unsigned kernel module built from source can be
+loaded into the running kernel.
+
+The complex but secure resolution is to run the
+custom-images/examples/secure-boot/create-key-pair.sh so that the tls/
+directory is populated with the certificates, and on first run, cloud
+secrets are populated with the signing material.
+
+The `custom-images/examples/secure-boot/create-key-pair.sh` script
+emits bash code which can be evaluated in order to populate
+appropriate environment variables.  You will need to run `gcloud
+config set project ${PROJECT_ID}` before running `create-key-pair.sh`
+to specify the project of the secret manager service.
+
+```bash
+$ bash custom-images/examples/secure-boot/create-key-pair.sh
+modulus_md5sum=ffffffffffffffffffffffffffffffff
+private_secret_name=efi-db-priv-key-042
+public_secret_name=efi-db-pub-key-042
+secret_project=your-project-id
+secret_version=1
+```
+
 
 #### Verification
 

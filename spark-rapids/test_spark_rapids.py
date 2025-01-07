@@ -61,17 +61,8 @@ class SparkRapidsTestCase(DataprocTestCase):
     if self.getImageOs() == "rocky":
       self.skipTest("Not supported for Rocky OS")
 
-    if self.getImageVersion() < pkg_resources.parse_version("2.0"):
-      self.skipTest("Not supported in pre 2.0 images")
-
-    if self.getImageVersion() == pkg_resources.parse_version("2.0") and self.getImageOs() == "ubuntu":
-      self.skipTest("Not supported in image 2.0 for ubuntu")
-
-    if self.getImageVersion() == pkg_resources.parse_version("2.1"):
-      self.skipTest("Not supported in image 2.1 because of secure boot")
-
-    if self.getImageVersion() == pkg_resources.parse_version("2.2"):
-      self.skipTest("Not supported in image 2.2 because of secure boot")
+    if self.getImageVersion() <= pkg_resources.parse_version("2.0"):
+      self.skipTest("Not supported in 2.0 and earlier images")
 
     optional_components = None
     metadata = "gpu-driver-provider=NVIDIA,rapids-runtime=SPARK"
@@ -84,7 +75,7 @@ class SparkRapidsTestCase(DataprocTestCase):
         machine_type="n1-standard-4",
         master_accelerator=accelerator if configuration == "SINGLE" else None,
         worker_accelerator=accelerator,
-        boot_disk_size="1024GB",
+        boot_disk_size="50GB",
         timeout_in_minutes=30)
 
     for machine_suffix in machine_suffixes:
@@ -100,17 +91,8 @@ class SparkRapidsTestCase(DataprocTestCase):
     if self.getImageOs() == "rocky":
       self.skipTest("Not supported for Rocky OS")
 
-    if self.getImageVersion() < pkg_resources.parse_version("2.0"):
-      self.skipTest("Not supported in pre 2.0 images")
-
-    if self.getImageVersion() == pkg_resources.parse_version("2.0") and self.getImageOs() == "ubuntu":
-      self.skipTest("Not supported in image 2.0 for ubuntu")
-
-    if self.getImageVersion() == pkg_resources.parse_version("2.1"):
-      self.skipTest("Not supported in image 2.1 because of secure boot")
-
-    if self.getImageVersion() == pkg_resources.parse_version("2.2"):
-      self.skipTest("Not supported in image 2.2 because of secure boot")
+    if self.getImageVersion() <= pkg_resources.parse_version("2.0"):
+      self.skipTest("Not supported in 2.0 and earlier images")
 
     optional_components = None
     metadata = "gpu-driver-provider=NVIDIA,rapids-runtime=SPARK"
@@ -123,7 +105,7 @@ class SparkRapidsTestCase(DataprocTestCase):
       machine_type="n1-standard-4",
       master_accelerator=accelerator if configuration == "SINGLE" else None,
       worker_accelerator=accelerator,
-      boot_disk_size="1024GB",
+      boot_disk_size="50GB",
       timeout_in_minutes=30)
 
     for machine_suffix in machine_suffixes:
@@ -139,17 +121,8 @@ class SparkRapidsTestCase(DataprocTestCase):
     if self.getImageOs() == "rocky":
       self.skipTest("Not supported for Rocky OS")
 
-    if self.getImageVersion() < pkg_resources.parse_version("2.0"):
-      self.skipTest("Not supported in pre 2.0 images")
-
-    if self.getImageVersion() == pkg_resources.parse_version("2.0") and self.getImageOs() == "ubuntu":
-      self.skipTest("Not supported in image 2.0 for ubuntu")
-
-    if self.getImageVersion() == pkg_resources.parse_version("2.1"):
-      self.skipTest("Not supported in image 2.1 because of secure boot")
-
-    if self.getImageVersion() == pkg_resources.parse_version("2.2"):
-      self.skipTest("Not supported in image 2.2 because of secure boot")
+    if self.getImageVersion() <= pkg_resources.parse_version("2.0"):
+      self.skipTest("Not supported in 2.0 and earlier images")
 
     metadata = ("gpu-driver-provider=NVIDIA,rapids-runtime=SPARK"
                 ",cuda-version={0},driver-version={1}".format(cuda_version, driver_version))
@@ -161,7 +134,7 @@ class SparkRapidsTestCase(DataprocTestCase):
         machine_type="n1-standard-4",
         master_accelerator=accelerator if configuration == "SINGLE" else None,
         worker_accelerator=accelerator,
-        boot_disk_size="1024GB",
+        boot_disk_size="50GB",
         timeout_in_minutes=30)
 
     for machine_suffix in machine_suffixes:

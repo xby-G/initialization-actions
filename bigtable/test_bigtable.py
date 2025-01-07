@@ -67,10 +67,11 @@ class BigTableTestCase(DataprocTestCase):
         ("SINGLE", ["m"]),
         ("STANDARD", ["m"]),
         ("HA", ["m-0"]),
+        ("KERBEROS", ["m"]),
     )
     def test_bigtable(self, configuration, machine_suffixes):
         self.createCluster(
-            configuration, self.INIT_ACTIONS, metadata=self.metadata)
+            configuration, self.INIT_ACTIONS, metadata=self.metadata, timeout_in_minutes=15)
 
         for machine_suffix in machine_suffixes:
             self.verify_instance("{}-{}".format(self.getClusterName(),
